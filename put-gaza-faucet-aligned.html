@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Путь газа</title>
+<style>
+:root{--blue:#1778be;--orange:#ff9900;--deep:#0b4d79;--gold:#ffb21a}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:linear-gradient(145deg,#2588c6,#0d568b);font-family:Arial,sans-serif;color:#fff}
+main{width:min(980px,100%);margin:auto;padding:20px 14px 28px;text-align:center}
+h1{margin:0 0 8px;color:var(--orange);font-size:clamp(28px,5vw,44px);letter-spacing:2px;text-shadow:0 3px #8b4e00}
+#status{min-height:24px;font-weight:bold}#moves{font-size:14px;color:#d7edff;margin-bottom:12px}
+.stage{position:relative;width:min(100%,660px);margin:0 auto 14px;padding:0 94px}
+#board{display:grid;grid-template-columns:repeat(3,1fr);aspect-ratio:1;border:3px solid #0b4d7b;border-radius:15px;overflow:hidden;background:#0d568b;box-shadow:0 14px 30px #002b4b66}
+.tile{position:relative;min-width:0;min-height:0;border:1px solid #3b91c8;background:linear-gradient(145deg,#2c8bc8,#12649f);padding:0;touch-action:manipulation}
+.tile:active{filter:brightness(1.15)}.pipeSvg{width:100%;height:100%;display:block}
+.pipeBase{fill:none;stroke:#0b4e7e;stroke-width:27;stroke-linecap:round}
+.pipeMetal{fill:none;stroke:var(--gold);stroke-width:20;stroke-linecap:round}
+.pipeShine{fill:none;stroke:#fff1b7;stroke-width:4;stroke-linecap:round;opacity:.8}
+.hubOuter{fill:#d87900;stroke:#8f4e00;stroke-width:3}.hubInner{fill:#ff9900;stroke:#ffd18a;stroke-width:2}
+.appliance{position:absolute;width:132px;display:flex;align-items:center;justify-content:center}
+.appliance svg{width:100%;height:auto;overflow:visible;filter:drop-shadow(0 5px 3px #002e4d55)}
+#tap{left:94px;top:16.6667%;transform:translate(-100%,-50%);height:140px}
+#stove{right:94px;bottom:0;transform:translateX(100%);height:158px}
+.appliance-label{position:absolute;font-size:10px;font-weight:bold;letter-spacing:.5px;color:#d7edff;white-space:nowrap}
+#tap .appliance-label{left:0;top:-18px}#stove .appliance-label{right:0;bottom:-13px}
+#tap #faucetBtn{position:absolute;left:50%;bottom:-45px;transform:translateX(-50%);white-space:nowrap;padding:8px 10px;font-size:11px;z-index:3}
+button{cursor:pointer}#faucetBtn,.restart{border:0;border-radius:10px;background:var(--orange);color:#17314a;font-weight:bold;padding:11px 16px;box-shadow:0 4px #a95f00}
+#faucetBtn{margin:10px 0 12px}#faucetBtn:disabled{opacity:.65}
+.flameGroup{opacity:0}.lit .flameGroup{opacity:1;animation:flameFlicker .16s infinite alternate;transform-origin:60px 35px}
+@keyframes flameFlicker{to{transform:scaleX(.93) scaleY(1.08)}}
+.flameOuter{fill:#168cff;stroke:#0754a8;stroke-width:1.5}.flameInner{fill:#b8f5ff}
+.leak{position:absolute;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle,#fff 0%,#fff9 25%,#fff4 50%,transparent 75%);pointer-events:none;z-index:5;transform:translate(-50%,-50%);animation:gas 1.5s ease-out forwards}
+@keyframes gas{to{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(3.2)}}
+#result{min-height:22px;font-weight:bold;color:#ffca69;margin:8px 0}
+@media(max-width:600px){main{padding:16px 8px}.stage{padding:0 55px}.appliance{width:76px}#tap{left:55px;top:16.6667%;height:108px;transform:translate(-100%,-50%)}#stove{right:55px;height:116px}#tap .appliance-label{top:-15px}#tap #faucetBtn{bottom:-39px;padding:7px 8px;font-size:9px}.appliance-label{font-size:8px;letter-spacing:0}#tap .appliance-label,#stove .appliance-label{bottom:-12px}}
+</style>
+</head>
+<body>
+<main>
+<h1>ПУТЬ ГАЗА</h1>
+<div id="status">Поверни трубы, затем открой кран</div>
+<div id="moves">Ходы: 0</div>
+<div class="stage">
+  <!-- Кран расположен перед входной клеткой -->
+  <div id="tap" class="appliance">
+    <svg viewBox="0 0 150 160" role="img" aria-label="Реалистичный газовый кран">
+      <defs>
+        <linearGradient id="brass" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#ffe08a"/><stop offset=".35" stop-color="#ffad18"/><stop offset=".68" stop-color="#d87500"/><stop offset="1" stop-color="#8f4b00"/>
+        </linearGradient>
+        <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#e7f2f8"/><stop offset=".45" stop-color="#8ca7b8"/><stop offset="1" stop-color="#425d70"/>
+        </linearGradient>
+      </defs>
+      <!-- входной патрубок и корпус -->
+      <path d="M8 106H46V130H8Z" fill="url(#steel)" stroke="#263746" stroke-width="5"/>
+      <path d="M42 100H115V136H42Z" fill="url(#brass)" stroke="#263746" stroke-width="5"/>
+      <path d="M50 106H108" stroke="#fff0b5" stroke-width="4" opacity=".8"/>
+      <path d="M108 106H143V130H108Z" fill="url(#steel)" stroke="#263746" stroke-width="5"/>
+      <path d="M112 110H139" stroke="#fff" stroke-width="3" opacity=".7"/>
+      <!-- гайки -->
+      <path d="M5 100H23L29 106V130L23 136H5L0 130V106Z" fill="url(#steel)" stroke="#263746" stroke-width="4"/>
+      <path d="M127 100H145L150 106V130L145 136H127L121 130V106Z" fill="url(#steel)" stroke="#263746" stroke-width="4"/>
+      <!-- шток -->
+      <path d="M70 100V66H87V100Z" fill="url(#steel)" stroke="#263746" stroke-width="4"/>
+      <path d="M74 72H83" stroke="#fff" stroke-width="3"/>
+      <!-- ручка с округлыми концами -->
+      <path d="M42 58H111" stroke="#263746" stroke-width="19" stroke-linecap="round"/>
+      <path d="M42 58H111" stroke="url(#steel)" stroke-width="13" stroke-linecap="round"/>
+      <circle cx="42" cy="58" r="8" fill="#1778be" stroke="#263746" stroke-width="4"/>
+      <circle cx="111" cy="58" r="8" fill="#1778be" stroke="#263746" stroke-width="4"/>
+      <!-- крепёжные детали -->
+      <circle cx="79" cy="106" r="11" fill="url(#brass)" stroke="#263746" stroke-width="4"/>
+      <circle cx="79" cy="106" r="4" fill="#fff0b5"/>
+    </svg>
+    <button id="faucetBtn">ОТКРЫТЬ КРАН</button>
+    <div class="appliance-label">ГАЗОВЫЙ КРАН</div>
+  </div>
+  <div id="board" aria-label="Игровое поле 3 на 3"></div>
+  <!-- Плита стоит после выходной клетки; пламя над конфоркой -->
+  <div id="stove" class="appliance">
+    <svg viewBox="0 0 150 180" role="img" aria-label="Газовая плита с синей конфоркой">
+      <defs>
+        <linearGradient id="enamel" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#dceaf2"/><stop offset="1" stop-color="#8ba9bd"/>
+        </linearGradient>
+        <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#f8fcff"/><stop offset=".5" stop-color="#9bb3c2"/><stop offset="1" stop-color="#536c7d"/>
+        </linearGradient>
+      </defs>
+      <!-- верхняя панель и корпус -->
+      <rect x="14" y="46" width="122" height="122" rx="8" fill="url(#enamel)" stroke="#263746" stroke-width="5"/>
+      <rect x="8" y="40" width="134" height="20" rx="5" fill="url(#metal)" stroke="#263746" stroke-width="5"/>
+      <!-- решётка и конфорка на верхней плоскости -->
+      <ellipse cx="75" cy="39" rx="48" ry="15" fill="#263746"/>
+      <ellipse cx="75" cy="36" rx="42" ry="11" fill="#6b7d88" stroke="#263746" stroke-width="4"/>
+      <ellipse cx="75" cy="34" rx="30" ry="7" fill="#202c35" stroke="#b8cbd6" stroke-width="3"/>
+      <ellipse cx="75" cy="32" rx="17" ry="4" fill="#0c151c"/>
+      <!-- огонь именно над конфоркой -->
+      <g class="flameGroup">
+        <path class="flameOuter" d="M57 30C49 21 59 14 62 4C68 13 70 17 67 23C76 16 77 9 78 2C90 16 93 23 84 30Z"/>
+        <path class="flameInner" d="M67 30C62 23 69 18 72 12C77 20 80 25 75 30Z"/>
+      </g>
+      <!-- ручки -->
+      <g fill="url(#metal)" stroke="#263746" stroke-width="3">
+        <circle cx="38" cy="51" r="5"/><circle cx="60" cy="51" r="5"/><circle cx="90" cy="51" r="5"/><circle cx="112" cy="51" r="5"/>
+      </g>
+      <!-- дверца духовки -->
+      <rect x="27" y="72" width="96" height="75" rx="7" fill="#647b8a" stroke="#263746" stroke-width="5"/>
+      <rect x="35" y="80" width="80" height="58" rx="4" fill="#263746" stroke="#d7e5ed" stroke-width="3"/>
+      <path d="M48 89H102" stroke="#8299a8" stroke-width="3" opacity=".6"/>
+      <path d="M48 153H102" stroke="#263746" stroke-width="6" stroke-linecap="round"/>
+      <!-- ножки -->
+      <path d="M24 168V176M126 168V176" stroke="#263746" stroke-width="8" stroke-linecap="round"/>
+    </svg>
+    <div class="appliance-label">ГАЗОВАЯ ПЛИТА</div>
+  </div>
+</div>
+<div id="result"></div>
+<button class="restart" id="restart">НОВАЯ ИГРА</button>
+</main>
+<script>
+(() => {
+ const NS='http://www.w3.org/2000/svg',N=3,U=1,R=2,D=4,L=8;
+ const bits=[U,R,D,L],dr=[-1,0,1,0],dc=[0,1,0,-1],opp=[D,L,U,R];
+ const board=document.querySelector('#board'),status=document.querySelector('#status'),movesEl=document.querySelector('#moves');
+ const btn=document.querySelector('#faucetBtn'),result=document.querySelector('#result'),stove=document.querySelector('#stove');
+ const cells=[];let moves=0,ended=false;
+ const solved=[[L|R,L|R,L|D],[R|D,L|R,U|L],[U|R,L|R,L|R]];
+ function rotate(mask){return ((mask<<1)&15)|((mask&8)>>3)}
+ function svgEl(tag,attrs){const el=document.createElementNS(NS,tag);Object.entries(attrs).forEach(([k,v])=>el.setAttribute(k,v));return el}
+ function draw(cell){
+  cell.svg.innerHTML=`<defs><linearGradient id="gold${cell.idx}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d99b00"/><stop offset=".3" stop-color="#ffcf00"/><stop offset=".6" stop-color="#fff06a"/><stop offset="1" stop-color="#e6a900"/></linearGradient></defs>`;
+  for(let d=0;d<4;d++)if(cell.mask&bits[d]){
+   const path=`M 50 50 L ${50+dc[d]*50} ${50+dr[d]*50}`;
+   cell.svg.appendChild(svgEl('path',{d:path,class:'pipeBase'}));
+   cell.svg.appendChild(svgEl('path',{d:path,class:'pipeMetal',stroke:`url(#gold${cell.idx})`}));
+   cell.svg.appendChild(svgEl('path',{d:path,class:'pipeShine'}));
+  }
+  cell.svg.appendChild(svgEl('circle',{cx:50,cy:50,r:14,class:'hubOuter'}));
+  cell.svg.appendChild(svgEl('circle',{cx:50,cy:50,r:10,class:'hubInner'}));
+ }
+ function newGame(){
+  moves=0;ended=false;movesEl.textContent='Ходы: 0';status.textContent='Поверни трубы, затем открой кран';result.textContent='';
+  btn.disabled=false;stove.classList.remove('lit');board.innerHTML='';cells.length=0;
+  solved.flat().forEach((mask,idx)=>{
+   const tile=document.createElement('button');tile.className='tile';tile.setAttribute('aria-label',`Труба ${Math.floor(idx/3)+1}, ${idx%3+1}`);
+   const svg=svgEl('svg',{viewBox:'0 0 100 100',class:'pipeSvg','aria-hidden':'true'});tile.appendChild(svg);board.appendChild(tile);
+   let m=mask,turns=1+Math.floor(Math.random()*3);for(let j=0;j<turns;j++)m=rotate(m);
+   const cell={idx,r:Math.floor(idx/3),c:idx%3,mask:m,tile,svg};cells.push(cell);draw(cell);
+   tile.addEventListener('click',()=>{if(ended)return;cell.mask=rotate(cell.mask);draw(cell);moves++;movesEl.textContent='Ходы: '+moves});
+  });
+ }
+ function external(cell,d){return (cell.idx===0&&d===3)||(cell.idx===8&&d===1)}
+ function leaks(){
+  const out=[];cells.forEach(cell=>bits.forEach((bit,d)=>{if(!(cell.mask&bit)||external(cell,d))return;
+   const nr=cell.r+dr[d],nc=cell.c+dc[d];if(nr<0||nr>=N||nc<0||nc>=N||!(cells[nr*N+nc].mask&opp[d]))out.push({cell,d})}));
+  return out;
+ }
+ function success(){
+  if(!(cells[0].mask&L)||!(cells[8].mask&R))return false;
+  for(const cell of cells)for(let d=0;d<4;d++)if(cell.mask&bits[d]){
+   if(external(cell,d))continue;const nr=cell.r+dr[d],nc=cell.c+dc[d];
+   if(nr<0||nr>=N||nc<0||nc>=N||!(cells[nr*N+nc].mask&opp[d]))return false;
+  }
+  const seen=new Set([0]),q=[0];while(q.length){const cell=cells[q.shift()];
+   for(let d=0;d<4;d++)if(cell.mask&bits[d]){const nr=cell.r+dr[d],nc=cell.c+dc[d];
+    if(nr>=0&&nr<N&&nc>=0&&nc<N){const n=nr*N+nc;if((cells[n].mask&opp[d])&&!seen.has(n)){seen.add(n);q.push(n)}}}}
+  return seen.size===9;
+ }
+ function emitLeaks(list){list.forEach(({cell,d})=>{for(let j=0;j<5;j++){const puff=document.createElement('i');puff.className='leak';
+  puff.style.left=(50+dc[d]*50)+'%';puff.style.top=(50+dr[d]*50)+'%';
+  puff.style.setProperty('--dx',(dc[d]*38+(Math.random()*16-8))+'px');puff.style.setProperty('--dy',(dr[d]*38+(Math.random()*16-8))+'px');
+  cell.tile.appendChild(puff);setTimeout(()=>puff.remove(),1600)}})}
+ btn.addEventListener('click',()=>{if(ended)return;ended=true;btn.disabled=true;
+  if(success()){status.textContent='Газ безопасно дошёл до плиты!';result.textContent='Плита работает — отлично!';stove.classList.add('lit')}
+  else{status.textContent='Обнаружена утечка газа!';result.textContent='Газ выходит из незамкнутых концов труб. Поверни трубы и начни заново.';emitLeaks(leaks())}});
+ document.querySelector('#restart').addEventListener('click',newGame);newGame();
+})();
+</script>
+</body>
+</html>
